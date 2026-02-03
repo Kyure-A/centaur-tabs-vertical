@@ -231,12 +231,10 @@ If TEXT is longer than WIDTH, truncate it."
                         ""))
          (close-left-gap (if (> (length close-left) 0) " " ""))
          (close-right-gap (if (> (length close-right) 0) " " ""))
-         (handle-reserve (if (eq side 'left) 1 0))
          (close-right-align (if (> (length close-right) 0)
                                 (propertize
                                  " "
-                                 'display `(space :align-to (- right-fringe ,(+ handle-reserve
-                                                                                (string-width close-right)
+                                 'display `(space :align-to (- right-fringe ,(+ (string-width close-right)
                                                                                 (string-width close-right-gap)))))
                               ""))
          (icon (if (and centaur-tabs-vertical-show-icons
@@ -271,9 +269,7 @@ If TEXT is longer than WIDTH, truncate it."
                   ""))
          (label (propertize label 'face face))
          (marker (propertize marker 'face face))
-         (label-marker (centaur-tabs-vertical--pad (concat label marker)
-                                                   available
-                                                   face))
+         (label-marker (concat label marker))
          (content (concat close-left
                           close-left-gap
                           icon
