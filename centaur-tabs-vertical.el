@@ -214,6 +214,18 @@
   "Return a spacer aligned to the right fringe with OFFSET."
   (propertize " " 'display `(space :align-to (- right-fringe ,offset))))
 
+(defun centaur-tabs-vertical--string-columns (text)
+  "Return the display width of TEXT in columns.
+This accounts for display properties such as images when possible."
+  (let ((base (string-width text)))
+    (if (and (fboundp 'string-pixel-width)
+             (fboundp 'frame-char-width))
+        (let* ((char-width (max 1 (frame-char-width)))
+               (pixels (string-pixel-width text))
+               (cols (ceiling (/ (float pixels) char-width))))
+          (max base cols))
+      base)))
+
 (defun centaur-tabs-vertical--pad (text width face)
   "Pad TEXT to WIDTH using FACE.
 If TEXT is longer than WIDTH, truncate it."
@@ -312,8 +324,8 @@ If TEXT is longer than WIDTH, truncate it."
          (close-right-gap (if (> (length close-right) 0) " " ""))
          (close-right-align (if (> (length close-right) 0)
                                 (centaur-tabs-vertical--align-right
-                                 (+ (string-width close-right)
-                                    (string-width close-right-gap)))
+                                 (+ (centaur-tabs-vertical--string-columns close-right)
+                                    (centaur-tabs-vertical--string-columns close-right-gap)))
                               ""))
          (icon (if (and centaur-tabs-vertical-show-icons
                         centaur-tabs-set-icons
@@ -325,12 +337,12 @@ If TEXT is longer than WIDTH, truncate it."
                           modified-p)
                      centaur-tabs-modified-marker
                    ""))
-         (icon-width (string-width icon))
-         (marker-width (string-width marker))
-         (close-left-width (string-width close-left))
-         (close-right-width (string-width close-right))
-         (close-left-gap-width (string-width close-left-gap))
-         (close-right-gap-width (string-width close-right-gap))
+         (icon-width (centaur-tabs-vertical--string-columns icon))
+         (marker-width (centaur-tabs-vertical--string-columns marker))
+         (close-left-width (centaur-tabs-vertical--string-columns close-left))
+         (close-right-width (centaur-tabs-vertical--string-columns close-right))
+         (close-left-gap-width (centaur-tabs-vertical--string-columns close-left-gap))
+         (close-right-gap-width (centaur-tabs-vertical--string-columns close-right-gap))
          (gap (if (> icon-width 0) " " ""))
          (gap-width (length gap))
          (fixed-width (+ icon-width
