@@ -4,7 +4,7 @@
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "27.1") (centaur-tabs "3.3"))
 ;; Keywords: convenience, frames
-;; URL: https://github.com/ema2159/centaur-tabs
+;; URL: https://github.com/Kyure-A/centaur-tabs-vertical
 
 ;;; Commentary:
 ;; Provide vertical side tabs for centaur-tabs, rendered in a side window.
