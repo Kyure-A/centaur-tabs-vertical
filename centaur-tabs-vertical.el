@@ -107,6 +107,8 @@ When set to `match', match `centaur-tabs-height'."
 (defvar centaur-tabs-vertical--refreshing nil)
 (defvar centaur-tabs-vertical--advice-installed nil)
 (defvar centaur-tabs-vertical--centaur-tabs-managed nil)
+(defvar centaur-tabs-vertical--saved-buffer-list-function nil)
+(defvar centaur-tabs-vertical--buffer-list-wrapper-installed nil)
 
 (defvar centaur-tabs-vertical-tab-map
   (let ((map (make-sparse-keymap)))
@@ -199,6 +201,33 @@ When set to `match', match `centaur-tabs-height'."
 (defun centaur-tabs-vertical--side-window-p (window)
   "Return non-nil if WINDOW is a centaur-tabs vertical side window."
   (memq (window-parameter window 'centaur-tabs-vertical-side) '(left right)))
+
+(defun centaur-tabs-vertical--side-buffer-p (buffer)
+  "Return non-nil if BUFFER is a centaur-tabs vertical buffer."
+  (let ((name (buffer-name buffer)))
+    (and name (string-prefix-p centaur-tabs-vertical--buffer-prefix name))))
+
+(defun centaur-tabs-vertical--buffer-list ()
+  "Return buffers excluding centaur-tabs vertical side buffers."
+  (let* ((fn (or centaur-tabs-vertical--saved-buffer-list-function
+                 centaur-tabs-buffer-list-function))
+         (buffers (if (functionp fn) (funcall fn) (buffer-list))))
+    (cl-remove-if #'centaur-tabs-vertical--side-buffer-p buffers)))
+
+(defun centaur-tabs-vertical--install-buffer-list-wrapper ()
+  "Install a wrapper to hide vertical buffers from centaur-tabs."
+  (unless centaur-tabs-vertical--buffer-list-wrapper-installed
+    (setq centaur-tabs-vertical--saved-buffer-list-function
+          (or centaur-tabs-buffer-list-function #'buffer-list))
+    (setq centaur-tabs-buffer-list-function #'centaur-tabs-vertical--buffer-list)
+    (setq centaur-tabs-vertical--buffer-list-wrapper-installed t)))
+
+(defun centaur-tabs-vertical--remove-buffer-list-wrapper ()
+  "Restore the original centaur-tabs buffer list function."
+  (when centaur-tabs-vertical--buffer-list-wrapper-installed
+    (setq centaur-tabs-buffer-list-function centaur-tabs-vertical--saved-buffer-list-function)
+    (setq centaur-tabs-vertical--saved-buffer-list-function nil)
+    (setq centaur-tabs-vertical--buffer-list-wrapper-installed nil)))
 
 (defun centaur-tabs-vertical--track-main-window (&rest _)
   "Track the last selected non-side window."
@@ -623,6 +652,49 @@ If FORCE is non-nil, remove all vertical side windows."
       (with-current-buffer (window-buffer (posn-window pos))
         (get-text-property pt 'centaur-tabs-tab)))))
 
+(defun centaur-tabs-vertical--neighbor-tab (tab)
+  "Return a live neighbor tab for TAB or nil."
+  (let* ((tabset (centaur-tabs-current-tabset t))
+         (tabs (and tabset (centaur-tabs-tabs tabset))))
+    (when tabs
+      (let* ((index (cl-position tab tabs :test #'eq))
+             (next (and index (nth (1+ index) tabs)))
+             (prev (and index (> index 0) (nth (1- index) tabs))))
+        (cond
+         ((and next (buffer-live-p (centaur-tabs-tab-value next))) next)
+         ((and prev (buffer-live-p (centaur-tabs-tab-value prev))) prev)
+         (t nil))))))
+
+(defun centaur-tabs-vertical--fallback-buffer (current)
+  "Return a fallback buffer when closing CURRENT."
+  (cl-find-if (lambda (buf)
+                (and (buffer-live-p buf)
+                     (not (eq buf current))
+                     (not (centaur-tabs-vertical--side-buffer-p buf))
+                     (let ((name (buffer-name buf)))
+                       (and name (not (string-prefix-p " " name))))))
+              (buffer-list)))
+
+(defun centaur-tabs-vertical--maybe-select-replacement (tab)
+  "Select a neighbor tab or fallback buffer if TAB is current."
+  (let ((buffer (centaur-tabs-tab-value tab)))
+    (when (and (buffer-live-p buffer)
+               (eq (current-buffer) buffer))
+      (let ((replacement (centaur-tabs-vertical--neighbor-tab tab)))
+        (cond
+         (replacement
+          (centaur-tabs-buffer-select-tab replacement))
+         (t
+          (let ((fallback (centaur-tabs-vertical--fallback-buffer buffer)))
+            (when fallback
+              (set-window-buffer (selected-window) fallback)))))))))
+
+(defun centaur-tabs-vertical--close-tab (tab)
+  "Close TAB while keeping a live buffer selected."
+  (when tab
+    (centaur-tabs-vertical--maybe-select-replacement tab)
+    (centaur-tabs-buffer-close-tab tab)))
+
 (defun centaur-tabs-vertical--group-from-event (event)
   "Return the group from mouse EVENT."
   (let* ((pos (event-start event))
@@ -817,6 +889,7 @@ If FORCE is non-nil, remove all vertical side windows."
   (setq centaur-tabs-vertical--centaur-tabs-managed (not centaur-tabs-mode))
   (unless centaur-tabs-mode
     (centaur-tabs-mode 1))
+  (centaur-tabs-vertical--install-buffer-list-wrapper)
   (centaur-tabs-vertical--install-advice)
   (centaur-tabs-vertical--install-hooks)
   (centaur-tabs-vertical-refresh))
@@ -825,6 +898,7 @@ If FORCE is non-nil, remove all vertical side windows."
   "Disable vertical tabs."
   (centaur-tabs-vertical--remove-hooks)
   (centaur-tabs-vertical--remove-advice)
+  (centaur-tabs-vertical--remove-buffer-list-wrapper)
   (centaur-tabs-vertical--cleanup-windows t)
   (when centaur-tabs-vertical--centaur-tabs-managed
     (centaur-tabs-mode -1))
