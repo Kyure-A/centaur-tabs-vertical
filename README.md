@@ -1,0 +1,47 @@
+# centaur-tabs-vertical
+
+Vertical side tabs for centaur-tabs.
+
+## MVP Scope
+
+- Left and right side windows supported.
+- Horizontal centaur-tabs are hidden while vertical mode is active.
+- Icons are shown using centaur-tabs icon support.
+- Mouse selection and middle-click close.
+- Drag the handle "|" to resize the sidebar width.
+
+## Install (local)
+
+```
+(add-to-list 'load-path "/path/to/centaur-tabs/centaur-tabs-vertical")
+(require 'centaur-tabs-vertical)
+```
+
+## Usage
+
+```
+(centaur-tabs-vertical-mode 1)
+```
+
+## Customization
+
+```
+(setq centaur-tabs-vertical-positions '(left right))
+(setq centaur-tabs-vertical-left-width 30)
+(setq centaur-tabs-vertical-right-width 30)
+(setq centaur-tabs-vertical-min-width 18)
+(setq centaur-tabs-vertical-max-width 60)
+(setq centaur-tabs-vertical-show-icons t)
+(setq centaur-tabs-vertical-show-group t)
+```
+
+## Keys (in the sidebar)
+
+- `RET`: select tab
+- `k`: close tab
+- `g`: refresh
+- `s`: switch group (uses `centaur-tabs-switch-group`)
+
+## Notes
+
+This is an MVP. It intentionally focuses on core vertical tab behavior so we can iterate.
