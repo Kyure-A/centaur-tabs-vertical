@@ -44,6 +44,14 @@
   (let ((centaur-tabs-vertical-mode nil))
     (should (equal (centaur-tabs-vertical--advice-line (lambda (&rest _) 'ok)) 'ok))))
 
+(ert-deftest centaur-tabs-vertical-interactive-toggle-commands ()
+  (let (calls)
+    (cl-letf (((symbol-function 'centaur-tabs-vertical-mode)
+               (lambda (&optional arg) (push arg calls))))
+      (centaur-tabs-vertical-enable)
+      (centaur-tabs-vertical-disable))
+    (should (equal (nreverse calls) '(1 0)))))
+
 (ert-deftest centaur-tabs-vertical-close-button-properties ()
   (with-temp-buffer
     (let* ((buf (current-buffer))
