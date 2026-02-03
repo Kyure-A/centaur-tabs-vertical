@@ -83,6 +83,13 @@
     map)
   "Mouse keymap for vertical tab entries.")
 
+(defvar centaur-tabs-vertical-close-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [mouse-1] #'centaur-tabs-vertical-mouse-close)
+    (define-key map [mouse-2] #'centaur-tabs-vertical-mouse-close)
+    map)
+  "Mouse keymap for close buttons in vertical tabs.")
+
 (defvar centaur-tabs-vertical-resize-map
   (let ((map (make-sparse-keymap)))
     (define-key map [drag-mouse-1] #'centaur-tabs-vertical-mouse-resize)
@@ -194,6 +201,17 @@ If TEXT is longer than WIDTH, truncate it."
     (add-text-properties 0 (length text) props text)
     text))
 
+(defun centaur-tabs-vertical--apply-close-props (text tab start end)
+  "Apply close-button properties to TEXT from START to END for TAB."
+  (add-text-properties
+   start end
+   (list 'centaur-tabs-tab tab
+         'local-map centaur-tabs-vertical-close-map
+         'mouse-face 'centaur-tabs-close-mouse-face
+         'help-echo "Close buffer")
+   text)
+  text)
+
 (defun centaur-tabs-vertical--render-tab (tab selected side width)
   "Render TAB with SELECTED state for SIDE within WIDTH."
   (let* ((buffer (centaur-tabs-tab-value tab))
@@ -202,6 +220,17 @@ If TEXT is longer than WIDTH, truncate it."
                        (and (not buffer-read-only)
                             (buffer-modified-p buffer))))
          (face (centaur-tabs-vertical--tab-face selected-p modified-p))
+         (close-face (if selected-p
+                         'centaur-tabs-close-selected
+                       'centaur-tabs-close-unselected))
+         (close-left (if centaur-tabs-set-left-close-button
+                         (propertize centaur-tabs-close-button 'face close-face)
+                       ""))
+         (close-right (if centaur-tabs-set-close-button
+                          (propertize centaur-tabs-close-button 'face close-face)
+                        ""))
+         (close-left-gap (if (> (length close-left) 0) " " ""))
+         (close-right-gap (if (> (length close-right) 0) " " ""))
          (icon (if (and centaur-tabs-vertical-show-icons
                         centaur-tabs-set-icons
                         (not centaur-tabs--buffer-show-groups))
@@ -214,18 +243,48 @@ If TEXT is longer than WIDTH, truncate it."
                    ""))
          (icon-width (string-width icon))
          (marker-width (string-width marker))
+         (close-left-width (string-width close-left))
+         (close-right-width (string-width close-right))
+         (close-left-gap-width (string-width close-left-gap))
+         (close-right-gap-width (string-width close-right-gap))
          (gap (if (> icon-width 0) " " ""))
          (gap-width (length gap))
-         (available (max 0 (- width icon-width gap-width marker-width)))
+         (fixed-width (+ icon-width
+                         gap-width
+                         close-left-width
+                         close-right-width
+                         close-left-gap-width
+                         close-right-gap-width))
+         (available (max 0 (- width fixed-width)))
+         (label-width (max 0 (- available marker-width)))
          (label (centaur-tabs-vertical--tab-label tab))
-         (label (if (> available 0)
-                    (truncate-string-to-width label available 0 nil t)
+         (label (if (> label-width 0)
+                    (truncate-string-to-width label label-width 0 nil t)
                   ""))
          (label (propertize label 'face face))
          (marker (propertize marker 'face face))
-         (content (concat icon gap label marker))
-         (content (centaur-tabs-vertical--pad content width face))
+         (label-marker (centaur-tabs-vertical--pad (concat label marker)
+                                                   available
+                                                   face))
+         (content (concat close-left
+                          close-left-gap
+                          icon
+                          gap
+                          label-marker
+                          close-right-gap
+                          close-right))
+         (close-left-range (and (> (length close-left) 0)
+                                (cons 0 (length close-left))))
+         (close-right-range (and (> (length close-right) 0)
+                                 (let ((end (length content)))
+                                   (cons (- end (length close-right)) end))))
          (content (centaur-tabs-vertical--apply-tab-props content tab buffer)))
+    (when close-left-range
+      (centaur-tabs-vertical--apply-close-props
+       content tab (car close-left-range) (cdr close-left-range)))
+    (when close-right-range
+      (centaur-tabs-vertical--apply-close-props
+       content tab (car close-right-range) (cdr close-right-range)))
     (if (eq side 'right)
         (concat (centaur-tabs-vertical--resize-handle side) content)
       (concat content (centaur-tabs-vertical--resize-handle side)))))
