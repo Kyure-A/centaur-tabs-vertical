@@ -44,6 +44,24 @@
   (let ((centaur-tabs-vertical-mode nil))
     (should (equal (centaur-tabs-vertical--advice-line (lambda (&rest _) 'ok)) 'ok))))
 
+(ert-deftest centaur-tabs-vertical-close-button-properties ()
+  (with-temp-buffer
+    (let* ((buf (current-buffer))
+           (tab (cons buf 'dummy))
+           (centaur-tabs-set-close-button t)
+           (centaur-tabs-set-left-close-button t)
+           (centaur-tabs-close-button "x")
+           (centaur-tabs-vertical-show-icons nil)
+           (centaur-tabs-set-icons nil)
+           (centaur-tabs-vertical-show-modified-marker nil)
+           (centaur-tabs-set-modified-marker nil))
+      (let* ((rendered (centaur-tabs-vertical--render-tab tab tab 'left 12))
+             (left-map (get-text-property 0 'local-map rendered))
+             (right-index (- (length rendered) 2))
+             (right-map (get-text-property right-index 'local-map rendered)))
+        (should (eq left-map centaur-tabs-vertical-close-map))
+        (should (eq right-map centaur-tabs-vertical-close-map))))))
+
 (ert-deftest centaur-tabs-vertical-cleanup-force ()
   (let ((centaur-tabs-vertical-positions '(left))
         deleted
