@@ -64,9 +64,10 @@
            (centaur-tabs-vertical-show-modified-marker nil)
            (centaur-tabs-set-modified-marker nil))
       (let* ((rendered (centaur-tabs-vertical--render-tab tab tab 'left 12))
-             (left-map (get-text-property 0 'local-map rendered))
-             (right-index (- (length rendered) 2))
-             (right-map (get-text-property right-index 'local-map rendered)))
+             (first (string-match (regexp-quote centaur-tabs-close-button) rendered))
+             (last (cl-search centaur-tabs-close-button rendered :from-end t))
+             (left-map (and first (get-text-property first 'local-map rendered)))
+             (right-map (and last (get-text-property last 'local-map rendered))))
         (should (eq left-map centaur-tabs-vertical-close-map))
         (should (eq right-map centaur-tabs-vertical-close-map))))))
 
