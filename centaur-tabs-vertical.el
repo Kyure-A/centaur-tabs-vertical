@@ -59,7 +59,8 @@
   :group 'centaur-tabs-vertical)
 
 (defcustom centaur-tabs-vertical-show-new-tab-button centaur-tabs-show-new-tab-button
-  "When non-nil, show the button to create a new tab in the sidebar."
+  "When non-nil, show the button to create a new tab in the sidebar.
+This respects `centaur-tabs-show-new-tab-button'."
   :type 'boolean
   :group 'centaur-tabs-vertical)
 
@@ -260,7 +261,8 @@ If TEXT is longer than WIDTH, truncate it."
 
 (defun centaur-tabs-vertical--new-tab-button ()
   "Return the new tab button string."
-  (when centaur-tabs-vertical-show-new-tab-button
+  (when (and centaur-tabs-show-new-tab-button
+             centaur-tabs-vertical-show-new-tab-button)
     (let ((button (centaur-tabs-button-tab centaur-tabs-new-tab-text)))
       (add-text-properties
        0 (length button)
@@ -269,6 +271,20 @@ If TEXT is longer than WIDTH, truncate it."
              'help-echo "Create new tab")
        button)
       button)))
+
+(defun centaur-tabs-vertical--render-new-tab (side width)
+  "Render a new-tab button entry for SIDE within WIDTH."
+  (ignore width)
+  (let* ((button (centaur-tabs-vertical--new-tab-button))
+         (button-width (and button (centaur-tabs-vertical--string-columns button))))
+    (when button
+      (let* ((gap (if (> button-width 0) " " ""))
+             (gap-width (string-width gap))
+             (align (centaur-tabs-vertical--align-right (+ button-width gap-width)))
+             (content (concat align gap button)))
+        (if (eq side 'right)
+            (concat (centaur-tabs-vertical--resize-handle side) content)
+          (concat content (centaur-tabs-vertical--resize-handle side)))))))
 
 (defun centaur-tabs-vertical--apply-group-props (text group)
   "Apply group properties to TEXT for GROUP."
@@ -384,30 +400,13 @@ If TEXT is longer than WIDTH, truncate it."
         (concat (centaur-tabs-vertical--resize-handle side) content)
       (concat content (centaur-tabs-vertical--resize-handle side)))))
 
-(defun centaur-tabs-vertical--render-header (title side width &optional with-new-tab)
-  "Render a group TITLE for SIDE within WIDTH.
-When WITH-NEW-TAB is non-nil, include the new-tab button."
-  (let ((handle (centaur-tabs-vertical--resize-handle side)))
-    (if with-new-tab
-        (let* ((button (or (centaur-tabs-vertical--new-tab-button) ""))
-               (button-width (string-width button))
-               (gap (if (> button-width 0) " " ""))
-               (gap-width (string-width gap))
-               (available (max 0 (- width button-width gap-width)))
-               (label (truncate-string-to-width title available 0 nil t))
-               (label (propertize label 'face 'centaur-tabs-vertical-group-face))
-               (align (if (> button-width 0)
-                          (centaur-tabs-vertical--align-right (+ button-width gap-width))
-                        ""))
-               (content (concat label align gap button)))
-          (if (eq side 'right)
-              (concat handle content)
-            (concat content handle)))
-      (let* ((label (propertize title 'face 'centaur-tabs-vertical-group-face))
-             (label (centaur-tabs-vertical--pad label width 'centaur-tabs-vertical-group-face)))
-        (if (eq side 'right)
-            (concat handle label)
-          (concat label handle))))))
+(defun centaur-tabs-vertical--render-header (title side width)
+  "Render a group TITLE for SIDE within WIDTH."
+  (let* ((label (propertize title 'face 'centaur-tabs-vertical-group-face))
+         (label (centaur-tabs-vertical--pad label width 'centaur-tabs-vertical-group-face)))
+    (if (eq side 'right)
+        (concat (centaur-tabs-vertical--resize-handle side) label)
+      (concat label (centaur-tabs-vertical--resize-handle side)))))
 
 (defun centaur-tabs-vertical--ensure-window (side)
   "Ensure a side window exists for SIDE and return it."
@@ -440,15 +439,13 @@ When WITH-NEW-TAB is non-nil, include the new-tab button."
                      (format " %s" (centaur-tabs-2str tabset))
                    " No Tabs"))
          (header-title (if centaur-tabs-vertical-show-group header ""))
-         (show-header (or centaur-tabs-vertical-show-group
-                          centaur-tabs-vertical-show-new-tab-button)))
+         (show-header centaur-tabs-vertical-show-group))
     (with-current-buffer (window-buffer window)
       (let ((inhibit-read-only t))
         (erase-buffer)
         (when show-header
           (insert (centaur-tabs-vertical--render-header
-                   header-title side content-width
-                   centaur-tabs-vertical-show-new-tab-button))
+                   header-title side content-width))
           (insert "\n"))
         (when centaur-tabs-vertical-show-group-list
           (let ((groups (centaur-tabs-vertical--render-groups side content-width)))
@@ -463,6 +460,11 @@ When WITH-NEW-TAB is non-nil, include the new-tab button."
         (dolist (tab tabs)
           (insert (centaur-tabs-vertical--render-tab tab selected side content-width))
           (insert "\n"))
+        (when centaur-tabs-vertical-show-new-tab-button
+          (let ((line (centaur-tabs-vertical--render-new-tab side content-width)))
+            (when line
+              (insert line)
+              (insert "\n"))))
         (goto-char (point-min))))))
 
 (defun centaur-tabs-vertical--cleanup-windows (&optional force)

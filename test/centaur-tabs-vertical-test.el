@@ -121,7 +121,7 @@
 (ert-deftest centaur-tabs-vertical-new-tab-button-properties ()
   (let* ((centaur-tabs-vertical-show-new-tab-button t)
          (centaur-tabs-new-tab-text " + ")
-         (rendered (centaur-tabs-vertical--render-header "Group" 'left 20 t))
+         (rendered (centaur-tabs-vertical--render-new-tab 'left 20))
          (pos (string-match (regexp-quote centaur-tabs-new-tab-text) rendered)))
     (should pos)
     (should (eq (get-text-property pos 'local-map rendered)

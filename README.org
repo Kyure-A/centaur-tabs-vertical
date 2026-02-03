@@ -8,7 +8,7 @@ Vertical side tabs for centaur-tabs.
 - Icons and modified markers supported.
 - Mouse selection and middle-click close.
 - Group list view (click to switch group).
-- New tab button in the header.
+- New tab button at the end of the tab list.
 - Drag the handle "|" to resize the sidebar width.
 
 ** Install (local)
