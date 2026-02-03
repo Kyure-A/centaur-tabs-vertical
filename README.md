@@ -25,6 +25,13 @@ Vertical side tabs for centaur-tabs.
 (centaur-tabs-vertical-mode 1)
 ```
 
+## Development (devenv)
+
+```
+devenv shell
+test
+```
+
 Interactive:
 
 - `M-x centaur-tabs-vertical-mode`
