@@ -48,7 +48,7 @@
   :type 'boolean
   :group 'centaur-tabs-vertical)
 
-(defcustom centaur-tabs-vertical-show-group t
+(defcustom centaur-tabs-vertical-show-group nil
   "Show the current group name at the top of the list."
   :type 'boolean
   :group 'centaur-tabs-vertical)
@@ -61,6 +61,12 @@
 (defcustom centaur-tabs-vertical-show-new-tab-button centaur-tabs-show-new-tab-button
   "When non-nil, show the button to create a new tab in the sidebar.
 This respects `centaur-tabs-show-new-tab-button'."
+  :type 'boolean
+  :group 'centaur-tabs-vertical)
+
+(defcustom centaur-tabs-vertical-show-navigation-buttons centaur-tabs-show-navigation-buttons
+  "When non-nil, show navigation buttons in the sidebar header.
+This respects `centaur-tabs-show-navigation-buttons'."
   :type 'boolean
   :group 'centaur-tabs-vertical)
 
@@ -106,6 +112,24 @@ This respects `centaur-tabs-show-new-tab-button'."
     (define-key map [drag-mouse-1] #'centaur-tabs-vertical-mouse-resize)
     map)
   "Mouse keymap for the resize handle.")
+
+(defvar centaur-tabs-vertical-down-tab-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [mouse-1] #'centaur-tabs-vertical-mouse-groups-menu)
+    map)
+  "Mouse keymap for the group menu button.")
+
+(defvar centaur-tabs-vertical-backward-tab-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [mouse-1] #'centaur-tabs-vertical-mouse-backward-tab)
+    map)
+  "Mouse keymap for the backward tab button.")
+
+(defvar centaur-tabs-vertical-forward-tab-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [mouse-1] #'centaur-tabs-vertical-mouse-forward-tab)
+    map)
+  "Mouse keymap for the forward tab button.")
 
 (defvar centaur-tabs-vertical-group-map
   (let ((map (make-sparse-keymap)))
@@ -275,6 +299,17 @@ If TEXT is longer than WIDTH, truncate it."
    text)
   text)
 
+(defun centaur-tabs-vertical--nav-button (text map help)
+  "Return a navigation button for TEXT with MAP and HELP."
+  (let ((button (centaur-tabs-button-tab text)))
+    (add-text-properties
+     0 (length button)
+     (list 'local-map map
+           'mouse-face 'highlight
+           'help-echo help)
+     button)
+    button))
+
 (defun centaur-tabs-vertical--render-new-tab (side width)
   "Render a new-tab button entry for SIDE within WIDTH."
   (let* ((button (centaur-tabs-vertical--new-tab-button))
@@ -290,6 +325,29 @@ If TEXT is longer than WIDTH, truncate it."
         (if (eq side 'right)
             (concat (centaur-tabs-vertical--resize-handle side) content)
           (concat content (centaur-tabs-vertical--resize-handle side)))))))
+
+(defun centaur-tabs-vertical--render-navigation (side width)
+  "Render navigation buttons for SIDE within WIDTH."
+  (when (and centaur-tabs-show-navigation-buttons
+             centaur-tabs-vertical-show-navigation-buttons
+             (display-graphic-p))
+    (let* ((down (centaur-tabs-vertical--nav-button
+                  centaur-tabs-down-tab-text
+                  centaur-tabs-vertical-down-tab-map
+                  "Change tab group"))
+           (backward (centaur-tabs-vertical--nav-button
+                      centaur-tabs-backward-tab-text
+                      centaur-tabs-vertical-backward-tab-map
+                      "Previous tab"))
+           (forward (centaur-tabs-vertical--nav-button
+                     centaur-tabs-forward-tab-text
+                     centaur-tabs-vertical-forward-tab-map
+                     "Next tab"))
+           (content (concat down backward forward))
+           (content (centaur-tabs-vertical--pad content width 'centaur-tabs-vertical-group-face)))
+      (if (eq side 'right)
+          (concat (centaur-tabs-vertical--resize-handle side) content)
+        (concat content (centaur-tabs-vertical--resize-handle side))))))
 
 (defun centaur-tabs-vertical--apply-group-props (text group)
   "Apply group properties to TEXT for GROUP."
@@ -448,6 +506,10 @@ If TEXT is longer than WIDTH, truncate it."
     (with-current-buffer (window-buffer window)
       (let ((inhibit-read-only t))
         (erase-buffer)
+        (let ((nav (centaur-tabs-vertical--render-navigation side content-width)))
+          (when nav
+            (insert nav)
+            (insert "\n")))
         (when show-header
           (insert (centaur-tabs-vertical--render-header
                    header-title side content-width))
@@ -571,6 +633,29 @@ If FORCE is non-nil, remove all vertical side windows."
     (when tab
       (centaur-tabs-vertical--with-target-window #'centaur-tabs-buffer-close-tab tab)
       (centaur-tabs-vertical-refresh))))
+
+(defun centaur-tabs-vertical-mouse-groups-menu (_event)
+  "Show the groups menu from a mouse EVENT."
+  (interactive "e")
+  (centaur-tabs-vertical--with-target-window
+   (lambda (_tab) (centaur-tabs--groups-menu))
+   nil))
+
+(defun centaur-tabs-vertical-mouse-backward-tab (_event)
+  "Select the previous tab from a mouse EVENT."
+  (interactive "e")
+  (centaur-tabs-vertical--with-target-window
+   (lambda (_tab) (centaur-tabs-backward-tab))
+   nil)
+  (centaur-tabs-vertical-refresh))
+
+(defun centaur-tabs-vertical-mouse-forward-tab (_event)
+  "Select the next tab from a mouse EVENT."
+  (interactive "e")
+  (centaur-tabs-vertical--with-target-window
+   (lambda (_tab) (centaur-tabs-forward-tab))
+   nil)
+  (centaur-tabs-vertical-refresh))
 
 (defun centaur-tabs-vertical-switch-group ()
   "Switch to the group at point."

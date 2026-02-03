@@ -49,9 +49,10 @@ test
 (setq centaur-tabs-vertical-min-width 18)
 (setq centaur-tabs-vertical-max-width 60)
 (setq centaur-tabs-vertical-show-icons t)
-(setq centaur-tabs-vertical-show-group t)
+(setq centaur-tabs-vertical-show-group nil)
 (setq centaur-tabs-vertical-show-group-list nil)
 (setq centaur-tabs-vertical-show-new-tab-button t)
+(setq centaur-tabs-vertical-show-navigation-buttons nil)
 #+end_src
 
 ** Keys (sidebar)
