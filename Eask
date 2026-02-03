@@ -4,7 +4,7 @@
          "0.1.0"
          "Vertical side tabs for centaur-tabs")
 
-(website-url "https://github.com/ema2159/centaur-tabs")
+(website-url "https://github.com/Kyure-A/centaur-tabs-vertical")
 (keywords "frames" "convenience")
 
 (package-file "centaur-tabs-vertical.el")
