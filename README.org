@@ -48,6 +48,7 @@ test
 (setq centaur-tabs-vertical-right-width 30)
 (setq centaur-tabs-vertical-min-width 18)
 (setq centaur-tabs-vertical-max-width 60)
+(setq centaur-tabs-vertical-line-spacing nil)
 (setq centaur-tabs-vertical-show-icons t)
 (setq centaur-tabs-vertical-show-group nil)
 (setq centaur-tabs-vertical-show-group-list nil)

@@ -173,6 +173,12 @@
                (lambda (&optional _frame) nil)))
       (should (null (centaur-tabs-vertical--render-navigation 'left 30))))))
 
+(ert-deftest centaur-tabs-vertical-line-spacing-custom ()
+  (let ((centaur-tabs-vertical-line-spacing 2))
+    (with-temp-buffer
+      (centaur-tabs-vertical-tablist-mode)
+      (should (equal line-spacing 2)))))
+
 (ert-deftest centaur-tabs-vertical-group-entry-properties ()
   (let* ((rendered (centaur-tabs-vertical--render-group-entry "GroupA" t 'left 20))
          (pos (string-match "GroupA" rendered)))

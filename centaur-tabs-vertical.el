@@ -75,6 +75,13 @@ This respects `centaur-tabs-show-navigation-buttons'."
   :type 'boolean
   :group 'centaur-tabs-vertical)
 
+(defcustom centaur-tabs-vertical-line-spacing nil
+  "Extra line spacing for vertical tab list buffers.
+When nil, use the default line spacing."
+  :type '(choice (const :tag "Default" nil)
+                 (number :tag "Extra line spacing"))
+  :group 'centaur-tabs-vertical)
+
 (defface centaur-tabs-vertical-group-face
   '((t (:inherit centaur-tabs-unselected :weight bold)))
   "Face for the group header line."
@@ -162,7 +169,8 @@ This respects `centaur-tabs-show-navigation-buttons'."
   (setq-local mode-line-format nil)
   (setq-local header-line-format nil)
   (setq-local show-trailing-whitespace nil)
-  (setq-local window-size-fixed nil))
+  (setq-local window-size-fixed nil)
+  (setq-local line-spacing centaur-tabs-vertical-line-spacing))
 
 (defun centaur-tabs-vertical--buffer-name (side)
   "Return the buffer name for SIDE."
