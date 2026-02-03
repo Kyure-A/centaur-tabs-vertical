@@ -71,6 +71,26 @@
         (should (eq left-map centaur-tabs-vertical-close-map))
         (should (eq right-map centaur-tabs-vertical-close-map))))))
 
+(ert-deftest centaur-tabs-vertical-close-align-spacer-no-pad ()
+  (with-temp-buffer
+    (rename-buffer "abc" t)
+    (let* ((buf (current-buffer))
+           (tab (cons buf 'dummy))
+           (centaur-tabs-set-close-button t)
+           (centaur-tabs-set-left-close-button nil)
+           (centaur-tabs-close-button "x")
+           (centaur-tabs-vertical-show-icons nil)
+           (centaur-tabs-set-icons nil)
+           (centaur-tabs-vertical-show-modified-marker nil)
+           (centaur-tabs-set-modified-marker nil)
+           (rendered (centaur-tabs-vertical--render-tab tab tab 'left 20))
+           (align-index (cl-loop for i from 0 below (length rendered)
+                                 for disp = (get-text-property i 'display rendered)
+                                 when (and (consp disp) (eq (car disp) 'space))
+                                 do (cl-return i))))
+      (should align-index)
+      (should (not (eq (aref rendered (1- align-index)) ?\s))))))
+
 (ert-deftest centaur-tabs-vertical-cleanup-force ()
   (let ((centaur-tabs-vertical-positions '(left))
         deleted
