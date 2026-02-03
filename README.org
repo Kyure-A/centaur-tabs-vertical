@@ -1,46 +1,40 @@
-# centaur-tabs-vertical
+* centaur-tabs-vertical
 
 Vertical side tabs for centaur-tabs.
 
-## MVP Scope
-
-- Left and right side windows supported.
+** Features
+- Left or right side window.
 - Horizontal centaur-tabs are hidden while vertical mode is active.
-- Icons are shown using centaur-tabs icon support.
+- Icons and modified markers supported.
 - Mouse selection and middle-click close.
 - Group list view (click to switch group).
 - New tab button in the header.
 - Drag the handle "|" to resize the sidebar width.
 
-## Install (local)
-
-```
+** Install (local)
+#+begin_src emacs-lisp
 (add-to-list 'load-path "/path/to/centaur-tabs/centaur-tabs-vertical")
 (require 'centaur-tabs-vertical)
-```
+#+end_src
 
-## Usage
-
-```
+** Usage
+#+begin_src emacs-lisp
 (centaur-tabs-vertical-mode 1)
-```
-
-## Development (devenv)
-
-```
-devenv shell
-test
-```
+#+end_src
 
 Interactive:
+- =M-x centaur-tabs-vertical-mode=
+- =M-x centaur-tabs-vertical-enable=
+- =M-x centaur-tabs-vertical-disable=
 
-- `M-x centaur-tabs-vertical-mode`
-- `M-x centaur-tabs-vertical-enable`
-- `M-x centaur-tabs-vertical-disable`
+** Development (devenv)
+#+begin_src sh
+devenv shell
+test
+#+end_src
 
-## Customization
-
-```
+** Customization
+#+begin_src emacs-lisp
 ;; Default: left only
 (setq centaur-tabs-vertical-positions '(left))
 
@@ -58,16 +52,11 @@ Interactive:
 (setq centaur-tabs-vertical-show-group t)
 (setq centaur-tabs-vertical-show-group-list t)
 (setq centaur-tabs-vertical-show-new-tab-button t)
-```
+#+end_src
 
-## Keys (in the sidebar)
-
-- `RET`: select tab
-- `k`: close tab
-- `g`: refresh
-- `n`: new tab
-- `s`: switch group (uses `centaur-tabs-switch-group`)
-
-## Notes
-
-This is an MVP. It intentionally focuses on core vertical tab behavior so we can iterate.
+** Keys (sidebar)
+- =RET=: select tab
+- =k=: close tab
+- =g=: refresh
+- =n=: new tab
+- =s=: switch group (uses =centaur-tabs-switch-group=)
