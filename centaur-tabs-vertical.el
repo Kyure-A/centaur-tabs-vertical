@@ -325,7 +325,7 @@ If TEXT is longer than WIDTH, truncate it."
   (interactive)
   (let ((tab (centaur-tabs-vertical--tab-at-point)))
     (when tab
-      (centaur-tabs-vertical--with-target-window #'centaur-tabs-select-tab tab)
+      (centaur-tabs-vertical--with-target-window #'centaur-tabs-buffer-select-tab tab)
       (centaur-tabs-vertical-refresh))))
 
 (defun centaur-tabs-vertical-close ()
@@ -341,7 +341,7 @@ If TEXT is longer than WIDTH, truncate it."
   (interactive "e")
   (let ((tab (centaur-tabs-vertical--tab-from-event event)))
     (when tab
-      (centaur-tabs-vertical--with-target-window #'centaur-tabs-select-tab tab)
+      (centaur-tabs-vertical--with-target-window #'centaur-tabs-buffer-select-tab tab)
       (centaur-tabs-vertical-refresh))))
 
 (defun centaur-tabs-vertical-mouse-close (event)
