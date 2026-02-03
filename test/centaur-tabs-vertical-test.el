@@ -1,0 +1,45 @@
+;;; centaur-tabs-vertical-test.el --- Tests for centaur-tabs-vertical -*- lexical-binding: t; -*-
+
+(require 'ert)
+
+(let* ((this-file (or load-file-name buffer-file-name))
+       (test-dir (file-name-directory this-file))
+       (project-dir (directory-file-name (file-name-directory test-dir)))
+       (repo-dir (directory-file-name (file-name-directory project-dir))))
+  (add-to-list 'load-path project-dir)
+  (add-to-list 'load-path repo-dir))
+
+(require 'centaur-tabs-vertical)
+
+(ert-deftest centaur-tabs-vertical-pad ()
+  (let ((result (centaur-tabs-vertical--pad "abc" 5 'default)))
+    (should (= (string-width result) 5))
+    (should (equal (substring result 0 3) "abc")))
+  (let ((result (centaur-tabs-vertical--pad "abcdef" 3 'default)))
+    (should (= (string-width result) 3))))
+
+(ert-deftest centaur-tabs-vertical-tab-label ()
+  (let ((centaur-tabs-tab-label-function (lambda (_tab) "X")))
+    (should (equal (centaur-tabs-vertical--tab-label (cons (current-buffer) nil)) "X"))))
+
+(ert-deftest centaur-tabs-vertical-render-tab-properties ()
+  (with-temp-buffer
+    (let* ((buf (current-buffer))
+           (tab (cons buf 'dummy))
+           (centaur-tabs-vertical-show-icons nil)
+           (centaur-tabs-set-icons nil)
+           (centaur-tabs-vertical-show-modified-marker nil)
+           (centaur-tabs-set-modified-marker nil))
+      (let ((left (centaur-tabs-vertical--render-tab tab tab 'left 10)))
+        (should (= (string-width left) 11))
+        (should (eq (get-text-property 0 'centaur-tabs-tab left) tab)))
+      (let ((right (centaur-tabs-vertical--render-tab tab tab 'right 10)))
+        (should (= (string-width right) 11))
+        (should (eq (get-text-property 1 'centaur-tabs-tab right) tab))))))
+
+(ert-deftest centaur-tabs-vertical-advice-line ()
+  (let ((centaur-tabs-vertical-mode t))
+    (should (null (centaur-tabs-vertical--advice-line (lambda (&rest _) 'ok)))))
+  (let ((centaur-tabs-vertical-mode nil))
+    (should (equal (centaur-tabs-vertical--advice-line (lambda (&rest _) 'ok)) 'ok))))
+
