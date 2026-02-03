@@ -51,6 +51,9 @@ test
 (setq centaur-tabs-vertical-line-spacing nil)
 ;; or match centaur-tabs height
 ;; (setq centaur-tabs-vertical-line-spacing 'match)
+;; Hover highlight for tabs/buttons (nil disables)
+(setq centaur-tabs-vertical-mouse-face nil)
+;; (setq centaur-tabs-vertical-mouse-face 'highlight)
 (setq centaur-tabs-vertical-show-icons t)
 (setq centaur-tabs-vertical-show-group nil)
 (setq centaur-tabs-vertical-show-group-list nil)

@@ -12,6 +12,17 @@
 
 (require 'centaur-tabs-vertical)
 
+(defun centaur-tabs-vertical-test--face-raise (face)
+  "Return the :raise value from FACE or nil."
+  (cond
+   ((and (listp face) (plist-member face :raise))
+    (plist-get face :raise))
+   ((listp face)
+    (cl-loop for entry in face
+             for value = (centaur-tabs-vertical-test--face-raise entry)
+             when value return value))
+   (t nil)))
+
 (ert-deftest centaur-tabs-vertical-pad ()
   (let ((result (centaur-tabs-vertical--pad "abc" 5 'default)))
     (should (= (string-width result) 5))
@@ -187,6 +198,56 @@
       (with-temp-buffer
         (centaur-tabs-vertical-tablist-mode)
         (should (= line-spacing 6))))))
+
+(ert-deftest centaur-tabs-vertical-line-raise-direction ()
+  (let ((centaur-tabs-vertical-line-spacing 4))
+    (should (= (centaur-tabs-vertical--line-raise) -2))))
+
+(ert-deftest centaur-tabs-vertical-line-raise-applied ()
+  (with-temp-buffer
+    (let* ((buf (current-buffer))
+           (tab (cons buf 'dummy))
+           (centaur-tabs-set-close-button t)
+           (centaur-tabs-set-left-close-button t)
+           (centaur-tabs-close-button "x")
+           (centaur-tabs-vertical-show-icons nil)
+           (centaur-tabs-set-icons nil)
+           (centaur-tabs-vertical-show-modified-marker nil)
+           (centaur-tabs-set-modified-marker nil)
+           (centaur-tabs-vertical-line-spacing 4)
+           (rendered (centaur-tabs-vertical--render-tab tab tab 'left 12))
+           (pos (string-match (regexp-quote centaur-tabs-close-button) rendered))
+           (raise (and pos
+                       (centaur-tabs-vertical-test--face-raise
+                        (get-text-property pos 'face rendered)))))
+      (should pos)
+      (should (= raise (centaur-tabs-vertical--line-raise))))))
+
+(ert-deftest centaur-tabs-vertical-tab-mouse-face-optional ()
+  (with-temp-buffer
+    (rename-buffer "abc" t)
+    (let* ((buf (current-buffer))
+           (tab (cons buf 'dummy))
+           (centaur-tabs-vertical-show-icons nil)
+           (centaur-tabs-set-icons nil)
+           (centaur-tabs-vertical-show-modified-marker nil)
+           (centaur-tabs-set-modified-marker nil)
+           (centaur-tabs-vertical-mouse-face nil)
+           (rendered (centaur-tabs-vertical--render-tab tab tab 'left 12))
+           (pos (string-match "abc" rendered)))
+      (should pos)
+      (should (null (get-text-property pos 'mouse-face rendered))))
+    (let* ((buf (current-buffer))
+           (tab (cons buf 'dummy))
+           (centaur-tabs-vertical-show-icons nil)
+           (centaur-tabs-set-icons nil)
+           (centaur-tabs-vertical-show-modified-marker nil)
+           (centaur-tabs-set-modified-marker nil)
+           (centaur-tabs-vertical-mouse-face 'highlight)
+           (rendered (centaur-tabs-vertical--render-tab tab tab 'left 12))
+           (pos (string-match "abc" rendered)))
+      (should pos)
+      (should (eq (get-text-property pos 'mouse-face rendered) 'highlight)))))
 
 (ert-deftest centaur-tabs-vertical-group-entry-properties ()
   (let* ((rendered (centaur-tabs-vertical--render-group-entry "GroupA" t 'left 20))

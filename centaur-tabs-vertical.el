@@ -75,6 +75,12 @@ This respects `centaur-tabs-show-navigation-buttons'."
   :type 'boolean
   :group 'centaur-tabs-vertical)
 
+(defcustom centaur-tabs-vertical-mouse-face nil
+  "Mouse face used for hover highlights in the vertical tab list.
+When nil, disable hover highlighting for tabs and buttons."
+  :type '(choice (const :tag "Disable" nil) face)
+  :group 'centaur-tabs-vertical)
+
 (defcustom centaur-tabs-vertical-line-spacing nil
   "Extra line spacing for vertical tab list buffers.
 When nil, use the default line spacing.
@@ -273,6 +279,19 @@ This accounts for display properties such as images when possible."
   "Apply line spacing for the current vertical tab list buffer."
   (setq-local line-spacing (centaur-tabs-vertical--resolve-line-spacing)))
 
+(defun centaur-tabs-vertical--line-raise ()
+  "Return the text raise value to center content in the line."
+  (let ((spacing (centaur-tabs-vertical--resolve-line-spacing)))
+    (when (and (numberp spacing) (> spacing 0))
+      (- (round (/ (float spacing) 2))))))
+
+(defun centaur-tabs-vertical--raise-text (text)
+  "Apply vertical centering to TEXT based on line spacing."
+  (let ((raise (centaur-tabs-vertical--line-raise)))
+    (when (and raise (not (zerop raise)))
+      (add-face-text-property 0 (length text) `(:raise ,raise) 'append text))
+    text))
+
 (defun centaur-tabs-vertical--pad (text width face)
   "Pad TEXT to WIDTH using FACE.
 If TEXT is longer than WIDTH, truncate it."
@@ -288,9 +307,10 @@ If TEXT is longer than WIDTH, truncate it."
   "Apply tab properties to TEXT for TAB and BUFFER."
   (let ((props (list 'centaur-tabs-tab tab
                      'local-map centaur-tabs-vertical-tab-map
-                     'mouse-face 'highlight
                      'help-echo (or (buffer-file-name buffer)
                                     (buffer-name buffer)))))
+    (when centaur-tabs-vertical-mouse-face
+      (setq props (append props (list 'mouse-face centaur-tabs-vertical-mouse-face))))
     (add-text-properties 0 (length text) props text)
     text))
 
@@ -309,25 +329,27 @@ If TEXT is longer than WIDTH, truncate it."
   "Return the new tab button string."
   (when (and centaur-tabs-show-new-tab-button
              centaur-tabs-vertical-show-new-tab-button)
-    (centaur-tabs-button-tab centaur-tabs-new-tab-text)))
+    (centaur-tabs-vertical--raise-text
+     (centaur-tabs-button-tab centaur-tabs-new-tab-text))))
 
 (defun centaur-tabs-vertical--apply-new-tab-props (text)
   "Apply new-tab button properties to TEXT."
   (add-text-properties
    0 (length text)
    (list 'local-map centaur-tabs-vertical-new-tab-map
-         'mouse-face 'highlight
+         'mouse-face centaur-tabs-vertical-mouse-face
          'help-echo "Create new tab")
    text)
   text)
 
 (defun centaur-tabs-vertical--nav-button (text map help)
   "Return a navigation button for TEXT with MAP and HELP."
-  (let ((button (centaur-tabs-button-tab text)))
+  (let ((button (centaur-tabs-vertical--raise-text
+                 (centaur-tabs-button-tab text))))
     (add-text-properties
      0 (length button)
      (list 'local-map map
-           'mouse-face 'highlight
+           'mouse-face centaur-tabs-vertical-mouse-face
            'help-echo help)
      button)
     button))
@@ -373,13 +395,12 @@ If TEXT is longer than WIDTH, truncate it."
 
 (defun centaur-tabs-vertical--apply-group-props (text group)
   "Apply group properties to TEXT for GROUP."
-  (add-text-properties
-   0 (length text)
-   (list 'centaur-tabs-vertical-group group
-         'local-map centaur-tabs-vertical-group-map
-         'mouse-face 'highlight
-         'help-echo "Switch group")
-   text)
+  (let ((props (list 'centaur-tabs-vertical-group group
+                     'local-map centaur-tabs-vertical-group-map
+                     'help-echo "Switch group")))
+    (when centaur-tabs-vertical-mouse-face
+      (setq props (append props (list 'mouse-face centaur-tabs-vertical-mouse-face))))
+    (add-text-properties 0 (length text) props text))
   text)
 
 (defun centaur-tabs-vertical--render-group-entry (group selected side width)
@@ -389,6 +410,7 @@ If TEXT is longer than WIDTH, truncate it."
                  'centaur-tabs-vertical-group-face))
          (label (centaur-tabs-vertical--pad group width face))
          (label (propertize label 'face face))
+         (label (centaur-tabs-vertical--raise-text label))
          (label (centaur-tabs-vertical--apply-group-props label group)))
     (if (eq side 'right)
         (concat (centaur-tabs-vertical--resize-handle side) label)
@@ -421,6 +443,8 @@ If TEXT is longer than WIDTH, truncate it."
          (close-right (if centaur-tabs-set-close-button
                           (propertize centaur-tabs-close-button 'face close-face)
                         ""))
+         (close-left (centaur-tabs-vertical--raise-text close-left))
+         (close-right (centaur-tabs-vertical--raise-text close-right))
          (close-left-gap (if (> (length close-left) 0) " " ""))
          (close-right-gap (if (> (length close-right) 0) " " ""))
          (close-right-align (if (> (length close-right) 0)
@@ -458,8 +482,10 @@ If TEXT is longer than WIDTH, truncate it."
          (label (if (> label-width 0)
                     (truncate-string-to-width label label-width 0 nil t)
                   ""))
-         (label (propertize label 'face face))
-         (marker (propertize marker 'face face))
+         (label (centaur-tabs-vertical--raise-text
+                 (propertize label 'face face)))
+         (marker (centaur-tabs-vertical--raise-text
+                  (propertize marker 'face face)))
          (label-marker (concat label marker))
          (content (concat close-left
                           close-left-gap
@@ -483,12 +509,13 @@ If TEXT is longer than WIDTH, truncate it."
        content tab (car close-right-range) (cdr close-right-range)))
     (if (eq side 'right)
         (concat (centaur-tabs-vertical--resize-handle side) content)
-      (concat content (centaur-tabs-vertical--resize-handle side)))))
+      (concat content (centaur-tabs-vertical--resize-handle side)))))))
 
 (defun centaur-tabs-vertical--render-header (title side width)
   "Render a group TITLE for SIDE within WIDTH."
   (let* ((label (propertize title 'face 'centaur-tabs-vertical-group-face))
-         (label (centaur-tabs-vertical--pad label width 'centaur-tabs-vertical-group-face)))
+         (label (centaur-tabs-vertical--pad label width 'centaur-tabs-vertical-group-face))
+         (label (centaur-tabs-vertical--raise-text label)))
     (if (eq side 'right)
         (concat (centaur-tabs-vertical--resize-handle side) label)
       (concat label (centaur-tabs-vertical--resize-handle side)))))
