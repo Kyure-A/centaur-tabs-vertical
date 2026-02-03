@@ -26,7 +26,15 @@ Vertical side tabs for centaur-tabs.
 ## Customization
 
 ```
-(setq centaur-tabs-vertical-positions '(left right))
+;; Default: left only
+(setq centaur-tabs-vertical-positions '(left))
+
+;; Right side only
+;; (setq centaur-tabs-vertical-positions '(right))
+
+;; Both sides (same content on each side)
+;; (setq centaur-tabs-vertical-positions '(left right))
+
 (setq centaur-tabs-vertical-left-width 30)
 (setq centaur-tabs-vertical-right-width 30)
 (setq centaur-tabs-vertical-min-width 18)

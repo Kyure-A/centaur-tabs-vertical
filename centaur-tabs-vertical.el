@@ -18,7 +18,7 @@
   "Vertical side tabs for centaur-tabs."
   :group 'centaur-tabs)
 
-(defcustom centaur-tabs-vertical-positions '(left right)
+(defcustom centaur-tabs-vertical-positions '(left)
   "Sides to display the vertical tab list."
   :type '(set (const left) (const right))
   :group 'centaur-tabs-vertical)
