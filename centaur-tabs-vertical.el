@@ -263,25 +263,30 @@ If TEXT is longer than WIDTH, truncate it."
   "Return the new tab button string."
   (when (and centaur-tabs-show-new-tab-button
              centaur-tabs-vertical-show-new-tab-button)
-    (let ((button (centaur-tabs-button-tab centaur-tabs-new-tab-text)))
-      (add-text-properties
-       0 (length button)
-       (list 'local-map centaur-tabs-vertical-new-tab-map
-             'mouse-face 'highlight
-             'help-echo "Create new tab")
-       button)
-      button)))
+    (centaur-tabs-button-tab centaur-tabs-new-tab-text)))
+
+(defun centaur-tabs-vertical--apply-new-tab-props (text)
+  "Apply new-tab button properties to TEXT."
+  (add-text-properties
+   0 (length text)
+   (list 'local-map centaur-tabs-vertical-new-tab-map
+         'mouse-face 'highlight
+         'help-echo "Create new tab")
+   text)
+  text)
 
 (defun centaur-tabs-vertical--render-new-tab (side width)
   "Render a new-tab button entry for SIDE within WIDTH."
-  (ignore width)
   (let* ((button (centaur-tabs-vertical--new-tab-button))
          (button-width (and button (centaur-tabs-vertical--string-columns button))))
     (when button
-      (let* ((gap (if (> button-width 0) " " ""))
-             (gap-width (string-width gap))
-             (align (centaur-tabs-vertical--align-right (+ button-width gap-width)))
-             (content (concat align gap button)))
+      (let* ((padding (max 0 (- width button-width)))
+             (left (floor (/ padding 2)))
+             (right (- padding left))
+             (content (concat (make-string left ?\s)
+                              button
+                              (make-string right ?\s)))
+             (content (centaur-tabs-vertical--apply-new-tab-props content)))
         (if (eq side 'right)
             (concat (centaur-tabs-vertical--resize-handle side) content)
           (concat content (centaur-tabs-vertical--resize-handle side)))))))
