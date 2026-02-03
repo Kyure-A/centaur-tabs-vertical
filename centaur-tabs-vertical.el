@@ -53,7 +53,7 @@
   :type 'boolean
   :group 'centaur-tabs-vertical)
 
-(defcustom centaur-tabs-vertical-show-group-list t
+(defcustom centaur-tabs-vertical-show-group-list nil
   "Show the list of groups above the tabs."
   :type 'boolean
   :group 'centaur-tabs-vertical)
