@@ -516,6 +516,18 @@ If FORCE is non-nil, remove all vertical side windows."
   (force-window-update))
 
 ;;;###autoload
+(defun centaur-tabs-vertical-enable ()
+  "Enable vertical tabs."
+  (interactive)
+  (centaur-tabs-vertical-mode 1))
+
+;;;###autoload
+(defun centaur-tabs-vertical-disable ()
+  "Disable vertical tabs."
+  (interactive)
+  (centaur-tabs-vertical-mode 0))
+
+;;;###autoload
 (define-minor-mode centaur-tabs-vertical-mode
   "Toggle vertical centaur-tabs side windows."
   :global t

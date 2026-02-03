@@ -23,6 +23,12 @@ Vertical side tabs for centaur-tabs.
 (centaur-tabs-vertical-mode 1)
 ```
 
+Interactive:
+
+- `M-x centaur-tabs-vertical-mode`
+- `M-x centaur-tabs-vertical-enable`
+- `M-x centaur-tabs-vertical-disable`
+
 ## Customization
 
 ```
