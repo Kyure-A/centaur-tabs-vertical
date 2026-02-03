@@ -457,8 +457,10 @@ If TEXT is longer than WIDTH, truncate it."
 
 (defun centaur-tabs-vertical--render-tab (tab selected side width)
   "Render TAB with SELECTED state for SIDE within WIDTH."
-  (let* ((buffer (centaur-tabs-tab-value tab))
-         (selected-p (eq tab selected))
+  (let* ((buffer (centaur-tabs-tab-value tab)))
+    (if (not (buffer-live-p buffer))
+        ""
+      (let* ((selected-p (eq tab selected))
          (modified-p (with-current-buffer buffer
                        (and (not buffer-read-only)
                             (buffer-modified-p buffer))))
@@ -582,6 +584,14 @@ If TEXT is longer than WIDTH, truncate it."
                    " No Tabs"))
          (header-title (if centaur-tabs-vertical-show-group header ""))
          (show-header centaur-tabs-vertical-show-group))
+    (when tabs
+      (setq tabs (cl-remove-if-not
+                  (lambda (tab)
+                    (buffer-live-p (centaur-tabs-tab-value tab)))
+                  tabs))
+      (unless (and selected
+                   (buffer-live-p (centaur-tabs-tab-value selected)))
+        (setq selected nil)))
     (with-current-buffer (window-buffer window)
       (let ((inhibit-read-only t))
         (erase-buffer)
@@ -729,7 +739,7 @@ If FORCE is non-nil, remove all vertical side windows."
   (interactive)
   (let ((tab (centaur-tabs-vertical--tab-at-point)))
     (when tab
-      (centaur-tabs-vertical--with-target-window #'centaur-tabs-buffer-close-tab tab)
+      (centaur-tabs-vertical--with-target-window #'centaur-tabs-vertical--close-tab tab)
       (centaur-tabs-vertical-refresh))))
 
 (defun centaur-tabs-vertical-new-tab ()
@@ -753,7 +763,7 @@ If FORCE is non-nil, remove all vertical side windows."
   (interactive "e")
   (let ((tab (centaur-tabs-vertical--tab-from-event event)))
     (when tab
-      (centaur-tabs-vertical--with-target-window #'centaur-tabs-buffer-close-tab tab)
+      (centaur-tabs-vertical--with-target-window #'centaur-tabs-vertical--close-tab tab)
       (centaur-tabs-vertical-refresh))))
 
 (defun centaur-tabs-vertical-mouse-groups-menu (_event)
