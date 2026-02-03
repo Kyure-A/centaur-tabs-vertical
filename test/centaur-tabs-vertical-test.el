@@ -91,6 +91,33 @@
       (should align-index)
       (should (not (eq (aref rendered (1- align-index)) ?\s))))))
 
+(ert-deftest centaur-tabs-vertical-new-tab-button-properties ()
+  (let* ((centaur-tabs-vertical-show-new-tab-button t)
+         (centaur-tabs-new-tab-text " + ")
+         (rendered (centaur-tabs-vertical--render-header "Group" 'left 20 t))
+         (pos (string-match (regexp-quote centaur-tabs-new-tab-text) rendered)))
+    (should pos)
+    (should (eq (get-text-property pos 'local-map rendered)
+                centaur-tabs-vertical-new-tab-map))))
+
+(ert-deftest centaur-tabs-vertical-group-entry-properties ()
+  (let* ((rendered (centaur-tabs-vertical--render-group-entry "GroupA" t 'left 20))
+         (pos (string-match "GroupA" rendered)))
+    (should pos)
+    (should (equal (get-text-property pos 'centaur-tabs-vertical-group rendered) "GroupA"))
+    (should (eq (get-text-property pos 'local-map rendered)
+                centaur-tabs-vertical-group-map))))
+
+(ert-deftest centaur-tabs-vertical-render-groups-list ()
+  (cl-letf (((symbol-function 'centaur-tabs-get-groups)
+             (lambda () '("A" "B")))
+            ((symbol-function 'centaur-tabs-vertical--current-group-name)
+             (lambda () "B")))
+    (let ((lines (centaur-tabs-vertical--render-groups 'left 20)))
+      (should (= (length lines) 2))
+      (should (string-match "A" (nth 0 lines)))
+      (should (string-match "B" (nth 1 lines))))))
+
 (ert-deftest centaur-tabs-vertical-cleanup-force ()
   (let ((centaur-tabs-vertical-positions '(left))
         deleted

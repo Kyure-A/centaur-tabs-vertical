@@ -53,6 +53,16 @@
   :type 'boolean
   :group 'centaur-tabs-vertical)
 
+(defcustom centaur-tabs-vertical-show-group-list t
+  "Show the list of groups above the tabs."
+  :type 'boolean
+  :group 'centaur-tabs-vertical)
+
+(defcustom centaur-tabs-vertical-show-new-tab-button centaur-tabs-show-new-tab-button
+  "When non-nil, show the button to create a new tab in the sidebar."
+  :type 'boolean
+  :group 'centaur-tabs-vertical)
+
 (defcustom centaur-tabs-vertical-show-modified-marker t
   "Show the modified marker for modified buffers."
   :type 'boolean
@@ -96,11 +106,25 @@
     map)
   "Mouse keymap for the resize handle.")
 
+(defvar centaur-tabs-vertical-group-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [mouse-1] #'centaur-tabs-vertical-mouse-switch-group)
+    map)
+  "Mouse keymap for group list entries.")
+
+(defvar centaur-tabs-vertical-new-tab-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [mouse-1] #'centaur-tabs-vertical-mouse-new-tab)
+    (define-key map [mouse-2] #'centaur-tabs-vertical-mouse-new-tab)
+    map)
+  "Mouse keymap for the new tab button.")
+
 (defvar centaur-tabs-vertical-tablist-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") #'centaur-tabs-vertical-select)
     (define-key map (kbd "k") #'centaur-tabs-vertical-close)
     (define-key map (kbd "g") #'centaur-tabs-vertical-refresh)
+    (define-key map (kbd "n") #'centaur-tabs-vertical-new-tab)
     (define-key map (kbd "s") #'centaur-tabs-switch-group)
     map)
   "Keymap for `centaur-tabs-vertical-tablist-mode'.")
@@ -157,6 +181,12 @@
       (with-current-buffer buf
         (centaur-tabs-current-tabset t)))))
 
+(defun centaur-tabs-vertical--current-group-name ()
+  "Return the current group name as a string."
+  (let ((tabset (centaur-tabs-vertical--current-tabset)))
+    (when tabset
+      (format "%s" tabset))))
+
 (defun centaur-tabs-vertical--tab-label (tab)
   "Return the label string for TAB."
   (if centaur-tabs-tab-label-function
@@ -179,6 +209,10 @@
               'mouse-face 'highlight
               'help-echo "Drag to resize"
               'local-map centaur-tabs-vertical-resize-map))
+
+(defun centaur-tabs-vertical--align-right (offset)
+  "Return a spacer aligned to the right fringe with OFFSET."
+  (propertize " " 'display `(space :align-to (- right-fringe ,offset))))
 
 (defun centaur-tabs-vertical--pad (text width face)
   "Pad TEXT to WIDTH using FACE.
@@ -212,6 +246,51 @@ If TEXT is longer than WIDTH, truncate it."
    text)
   text)
 
+(defun centaur-tabs-vertical--new-tab-button ()
+  "Return the new tab button string."
+  (when centaur-tabs-vertical-show-new-tab-button
+    (let ((button (centaur-tabs-button-tab centaur-tabs-new-tab-text)))
+      (add-text-properties
+       0 (length button)
+       (list 'local-map centaur-tabs-vertical-new-tab-map
+             'mouse-face 'highlight
+             'help-echo "Create new tab")
+       button)
+      button)))
+
+(defun centaur-tabs-vertical--apply-group-props (text group)
+  "Apply group properties to TEXT for GROUP."
+  (add-text-properties
+   0 (length text)
+   (list 'centaur-tabs-vertical-group group
+         'local-map centaur-tabs-vertical-group-map
+         'mouse-face 'highlight
+         'help-echo "Switch group")
+   text)
+  text)
+
+(defun centaur-tabs-vertical--render-group-entry (group selected side width)
+  "Render GROUP entry with SELECTED state for SIDE within WIDTH."
+  (let* ((face (if selected
+                   'centaur-tabs-selected
+                 'centaur-tabs-vertical-group-face))
+         (label (centaur-tabs-vertical--pad group width face))
+         (label (propertize label 'face face))
+         (label (centaur-tabs-vertical--apply-group-props label group)))
+    (if (eq side 'right)
+        (concat (centaur-tabs-vertical--resize-handle side) label)
+      (concat label (centaur-tabs-vertical--resize-handle side)))))
+
+(defun centaur-tabs-vertical--render-groups (side width)
+  "Render group entries for SIDE within WIDTH."
+  (let* ((groups (centaur-tabs-get-groups))
+         (current (centaur-tabs-vertical--current-group-name)))
+    (mapcar (lambda (group)
+              (centaur-tabs-vertical--render-group-entry group
+                                                        (and current (string= current group))
+                                                        side width))
+            groups)))
+
 (defun centaur-tabs-vertical--render-tab (tab selected side width)
   "Render TAB with SELECTED state for SIDE within WIDTH."
   (let* ((buffer (centaur-tabs-tab-value tab))
@@ -232,10 +311,9 @@ If TEXT is longer than WIDTH, truncate it."
          (close-left-gap (if (> (length close-left) 0) " " ""))
          (close-right-gap (if (> (length close-right) 0) " " ""))
          (close-right-align (if (> (length close-right) 0)
-                                (propertize
-                                 " "
-                                 'display `(space :align-to (- right-fringe ,(+ (string-width close-right)
-                                                                                (string-width close-right-gap)))))
+                                (centaur-tabs-vertical--align-right
+                                 (+ (string-width close-right)
+                                    (string-width close-right-gap)))
                               ""))
          (icon (if (and centaur-tabs-vertical-show-icons
                         centaur-tabs-set-icons
@@ -294,13 +372,30 @@ If TEXT is longer than WIDTH, truncate it."
         (concat (centaur-tabs-vertical--resize-handle side) content)
       (concat content (centaur-tabs-vertical--resize-handle side)))))
 
-(defun centaur-tabs-vertical--render-header (title side width)
-  "Render a group TITLE for SIDE within WIDTH."
-  (let* ((label (propertize title 'face 'centaur-tabs-vertical-group-face))
-         (label (centaur-tabs-vertical--pad label width 'centaur-tabs-vertical-group-face)))
-    (if (eq side 'right)
-        (concat (centaur-tabs-vertical--resize-handle side) label)
-      (concat label (centaur-tabs-vertical--resize-handle side)))))
+(defun centaur-tabs-vertical--render-header (title side width &optional with-new-tab)
+  "Render a group TITLE for SIDE within WIDTH.
+When WITH-NEW-TAB is non-nil, include the new-tab button."
+  (let ((handle (centaur-tabs-vertical--resize-handle side)))
+    (if with-new-tab
+        (let* ((button (or (centaur-tabs-vertical--new-tab-button) ""))
+               (button-width (string-width button))
+               (gap (if (> button-width 0) " " ""))
+               (gap-width (string-width gap))
+               (available (max 0 (- width button-width gap-width)))
+               (label (truncate-string-to-width title available 0 nil t))
+               (label (propertize label 'face 'centaur-tabs-vertical-group-face))
+               (align (if (> button-width 0)
+                          (centaur-tabs-vertical--align-right (+ button-width gap-width))
+                        ""))
+               (content (concat label align gap button)))
+          (if (eq side 'right)
+              (concat handle content)
+            (concat content handle)))
+      (let* ((label (propertize title 'face 'centaur-tabs-vertical-group-face))
+             (label (centaur-tabs-vertical--pad label width 'centaur-tabs-vertical-group-face)))
+        (if (eq side 'right)
+            (concat handle label)
+          (concat label handle))))))
 
 (defun centaur-tabs-vertical--ensure-window (side)
   "Ensure a side window exists for SIDE and return it."
@@ -331,13 +426,28 @@ If TEXT is longer than WIDTH, truncate it."
          (selected (and tabset (centaur-tabs-selected-tab tabset)))
          (header (if tabset
                      (format " %s" (centaur-tabs-2str tabset))
-                   " No Tabs")))
+                   " No Tabs"))
+         (header-title (if centaur-tabs-vertical-show-group header ""))
+         (show-header (or centaur-tabs-vertical-show-group
+                          centaur-tabs-vertical-show-new-tab-button)))
     (with-current-buffer (window-buffer window)
       (let ((inhibit-read-only t))
         (erase-buffer)
-        (when centaur-tabs-vertical-show-group
-          (insert (centaur-tabs-vertical--render-header header side content-width))
+        (when show-header
+          (insert (centaur-tabs-vertical--render-header
+                   header-title side content-width
+                   centaur-tabs-vertical-show-new-tab-button))
           (insert "\n"))
+        (when centaur-tabs-vertical-show-group-list
+          (let ((groups (centaur-tabs-vertical--render-groups side content-width)))
+            (when groups
+              (insert (centaur-tabs-vertical--render-header
+                       " Groups" side content-width))
+              (insert "\n")
+              (dolist (line groups)
+                (insert line)
+                (insert "\n"))
+              (insert "\n"))))
         (dolist (tab tabs)
           (insert (centaur-tabs-vertical--render-tab tab selected side content-width))
           (insert "\n"))
@@ -369,6 +479,10 @@ If FORCE is non-nil, remove all vertical side windows."
   "Return the tab at point."
   (get-text-property (point) 'centaur-tabs-tab))
 
+(defun centaur-tabs-vertical--group-at-point ()
+  "Return the group name at point."
+  (get-text-property (point) 'centaur-tabs-vertical-group))
+
 (defun centaur-tabs-vertical--tab-from-event (event)
   "Return the tab from mouse EVENT."
   (let* ((pos (event-start event))
@@ -377,6 +491,15 @@ If FORCE is non-nil, remove all vertical side windows."
     (when (and pt (integerp pt))
       (with-current-buffer (window-buffer (posn-window pos))
         (get-text-property pt 'centaur-tabs-tab)))))
+
+(defun centaur-tabs-vertical--group-from-event (event)
+  "Return the group from mouse EVENT."
+  (let* ((pos (event-start event))
+         (pt (or (posn-point pos)
+                 (cdr (posn-string pos)))))
+    (when (and pt (integerp pt))
+      (with-current-buffer (window-buffer (posn-window pos))
+        (get-text-property pt 'centaur-tabs-vertical-group)))))
 
 (defun centaur-tabs-vertical--with-target-window (fn tab)
   "Call FN with TAB in the target window."
@@ -388,10 +511,15 @@ If FORCE is non-nil, remove all vertical side windows."
 (defun centaur-tabs-vertical-select ()
   "Select the tab at point."
   (interactive)
-  (let ((tab (centaur-tabs-vertical--tab-at-point)))
-    (when tab
+  (let ((group (centaur-tabs-vertical--group-at-point))
+        (tab (centaur-tabs-vertical--tab-at-point)))
+    (cond
+     (group
+      (centaur-tabs-vertical--with-target-window #'centaur-tabs-switch-group group)
+      (centaur-tabs-vertical-refresh))
+     (tab
       (centaur-tabs-vertical--with-target-window #'centaur-tabs-buffer-select-tab tab)
-      (centaur-tabs-vertical-refresh))))
+      (centaur-tabs-vertical-refresh)))))
 
 (defun centaur-tabs-vertical-close ()
   "Close the tab at point."
@@ -400,6 +528,14 @@ If FORCE is non-nil, remove all vertical side windows."
     (when tab
       (centaur-tabs-vertical--with-target-window #'centaur-tabs-buffer-close-tab tab)
       (centaur-tabs-vertical-refresh))))
+
+(defun centaur-tabs-vertical-new-tab ()
+  "Create a new tab in the target window."
+  (interactive)
+  (centaur-tabs-vertical--with-target-window
+   (lambda (_tab) (centaur-tabs--create-new-tab))
+   nil)
+  (centaur-tabs-vertical-refresh))
 
 (defun centaur-tabs-vertical-mouse-select (event)
   "Select the tab clicked in EVENT."
@@ -416,6 +552,27 @@ If FORCE is non-nil, remove all vertical side windows."
     (when tab
       (centaur-tabs-vertical--with-target-window #'centaur-tabs-buffer-close-tab tab)
       (centaur-tabs-vertical-refresh))))
+
+(defun centaur-tabs-vertical-switch-group ()
+  "Switch to the group at point."
+  (interactive)
+  (let ((group (centaur-tabs-vertical--group-at-point)))
+    (when group
+      (centaur-tabs-vertical--with-target-window #'centaur-tabs-switch-group group)
+      (centaur-tabs-vertical-refresh))))
+
+(defun centaur-tabs-vertical-mouse-switch-group (event)
+  "Switch group clicked in EVENT."
+  (interactive "e")
+  (let ((group (centaur-tabs-vertical--group-from-event event)))
+    (when group
+      (centaur-tabs-vertical--with-target-window #'centaur-tabs-switch-group group)
+      (centaur-tabs-vertical-refresh))))
+
+(defun centaur-tabs-vertical-mouse-new-tab (_event)
+  "Create a new tab from a mouse EVENT."
+  (interactive "e")
+  (centaur-tabs-vertical-new-tab))
 
 (defun centaur-tabs-vertical--resize-window (window side delta)
   "Resize WINDOW on SIDE by DELTA columns."

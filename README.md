@@ -8,6 +8,8 @@ Vertical side tabs for centaur-tabs.
 - Horizontal centaur-tabs are hidden while vertical mode is active.
 - Icons are shown using centaur-tabs icon support.
 - Mouse selection and middle-click close.
+- Group list view (click to switch group).
+- New tab button in the header.
 - Drag the handle "|" to resize the sidebar width.
 
 ## Install (local)
@@ -47,6 +49,8 @@ Interactive:
 (setq centaur-tabs-vertical-max-width 60)
 (setq centaur-tabs-vertical-show-icons t)
 (setq centaur-tabs-vertical-show-group t)
+(setq centaur-tabs-vertical-show-group-list t)
+(setq centaur-tabs-vertical-show-new-tab-button t)
 ```
 
 ## Keys (in the sidebar)
@@ -54,6 +58,7 @@ Interactive:
 - `RET`: select tab
 - `k`: close tab
 - `g`: refresh
+- `n`: new tab
 - `s`: switch group (uses `centaur-tabs-switch-group`)
 
 ## Notes
