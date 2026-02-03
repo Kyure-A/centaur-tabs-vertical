@@ -279,10 +279,11 @@ If TEXT is longer than WIDTH, truncate it."
           (insert "\n"))
         (goto-char (point-min))))))
 
-(defun centaur-tabs-vertical--cleanup-windows ()
-  "Remove windows and buffers for sides not enabled."
+(defun centaur-tabs-vertical--cleanup-windows (&optional force)
+  "Remove windows and buffers for sides not enabled.
+If FORCE is non-nil, remove all vertical side windows."
   (dolist (side centaur-tabs-vertical--known-sides)
-    (unless (memq side centaur-tabs-vertical-positions)
+    (when (or force (not (memq side centaur-tabs-vertical-positions)))
       (let* ((buf (get-buffer (centaur-tabs-vertical--buffer-name side)))
              (win (and buf (get-buffer-window buf))))
         (when (window-live-p win)
@@ -449,7 +450,7 @@ If TEXT is longer than WIDTH, truncate it."
   "Disable vertical tabs."
   (centaur-tabs-vertical--remove-hooks)
   (centaur-tabs-vertical--remove-advice)
-  (centaur-tabs-vertical--cleanup-windows)
+  (centaur-tabs-vertical--cleanup-windows t)
   (when centaur-tabs-vertical--centaur-tabs-managed
     (centaur-tabs-mode -1))
   (setq centaur-tabs-vertical--centaur-tabs-managed nil)
