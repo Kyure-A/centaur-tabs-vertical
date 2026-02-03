@@ -1,6 +1,7 @@
 ;;; centaur-tabs-vertical-test.el --- Tests for centaur-tabs-vertical -*- lexical-binding: t; -*-
 
 (require 'ert)
+(require 'cl-lib)
 
 (let* ((this-file (or load-file-name buffer-file-name))
        (test-dir (file-name-directory this-file))
@@ -43,3 +44,22 @@
   (let ((centaur-tabs-vertical-mode nil))
     (should (equal (centaur-tabs-vertical--advice-line (lambda (&rest _) 'ok)) 'ok))))
 
+(ert-deftest centaur-tabs-vertical-cleanup-force ()
+  (let ((centaur-tabs-vertical-positions '(left))
+        deleted
+        killed)
+    (cl-letf (((symbol-function 'get-buffer)
+               (lambda (name) name))
+              ((symbol-function 'get-buffer-window)
+               (lambda (_buf) 'dummy-window))
+              ((symbol-function 'buffer-live-p)
+               (lambda (_buf) t))
+              ((symbol-function 'delete-window)
+               (lambda (win) (push win deleted)))
+              ((symbol-function 'kill-buffer)
+               (lambda (buf) (push buf killed))))
+      (centaur-tabs-vertical--cleanup-windows t)
+      (should (= (length deleted) 2))
+      (should (= (length killed) 2))
+      (should (member (centaur-tabs-vertical--buffer-name 'left) killed))
+      (should (member (centaur-tabs-vertical--buffer-name 'right) killed)))))
