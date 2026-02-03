@@ -77,8 +77,10 @@ This respects `centaur-tabs-show-navigation-buttons'."
 
 (defcustom centaur-tabs-vertical-line-spacing nil
   "Extra line spacing for vertical tab list buffers.
-When nil, use the default line spacing."
+When nil, use the default line spacing.
+When set to `match', match `centaur-tabs-height'."
   :type '(choice (const :tag "Default" nil)
+                 (const :tag "Match centaur-tabs height" match)
                  (number :tag "Extra line spacing"))
   :group 'centaur-tabs-vertical)
 
@@ -170,7 +172,7 @@ When nil, use the default line spacing."
   (setq-local header-line-format nil)
   (setq-local show-trailing-whitespace nil)
   (setq-local window-size-fixed nil)
-  (setq-local line-spacing centaur-tabs-vertical-line-spacing))
+  (centaur-tabs-vertical--apply-line-spacing))
 
 (defun centaur-tabs-vertical--buffer-name (side)
   "Return the buffer name for SIDE."
@@ -258,6 +260,18 @@ This accounts for display properties such as images when possible."
                (cols (ceiling (/ (float pixels) char-width))))
           (max base cols))
       base)))
+
+(defun centaur-tabs-vertical--resolve-line-spacing ()
+  "Return the line spacing value for the vertical tab list."
+  (pcase centaur-tabs-vertical-line-spacing
+    ('match
+     (max 0 (- centaur-tabs-height (frame-char-height))))
+    ((pred numberp) centaur-tabs-vertical-line-spacing)
+    (_ nil)))
+
+(defun centaur-tabs-vertical--apply-line-spacing ()
+  "Apply line spacing for the current vertical tab list buffer."
+  (setq-local line-spacing (centaur-tabs-vertical--resolve-line-spacing)))
 
 (defun centaur-tabs-vertical--pad (text width face)
   "Pad TEXT to WIDTH using FACE.
@@ -495,7 +509,8 @@ If TEXT is longer than WIDTH, truncate it."
       (set-window-dedicated-p window t))
     (set-window-parameter window 'centaur-tabs-vertical-side side)
     (with-current-buffer buffer
-      (centaur-tabs-vertical-tablist-mode))
+      (centaur-tabs-vertical-tablist-mode)
+      (centaur-tabs-vertical--apply-line-spacing))
     window))
 
 (defun centaur-tabs-vertical--render (side)

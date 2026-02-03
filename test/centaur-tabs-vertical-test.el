@@ -179,6 +179,15 @@
       (centaur-tabs-vertical-tablist-mode)
       (should (equal line-spacing 2)))))
 
+(ert-deftest centaur-tabs-vertical-line-spacing-match ()
+  (let ((centaur-tabs-vertical-line-spacing 'match)
+        (centaur-tabs-height 24))
+    (cl-letf (((symbol-function 'frame-char-height)
+               (lambda (&optional _frame) 18)))
+      (with-temp-buffer
+        (centaur-tabs-vertical-tablist-mode)
+        (should (= line-spacing 6))))))
+
 (ert-deftest centaur-tabs-vertical-group-entry-properties ()
   (let* ((rendered (centaur-tabs-vertical--render-group-entry "GroupA" t 'left 20))
          (pos (string-match "GroupA" rendered)))
